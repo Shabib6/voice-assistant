@@ -1,4 +1,4 @@
-# voice-assistant
+# ShabsTalk - A Voice Assistant
 
 # 🎙️ Voice Assistant using ElevenLabs, Whisper & OpenAI
 
