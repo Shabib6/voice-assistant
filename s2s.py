@@ -1,7 +1,6 @@
 from elevenlabs import ElevenLabs
 from dotenv import load_dotenv
 import os
-os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
 from openai import OpenAI
 import sounddevice as sd
 import numpy as np
@@ -9,10 +8,8 @@ import io
 import scipy.io.wavfile
 from playsound import playsound
 import tempfile
-import soundfile as sf
-from dia.model import Dia
-model = Dia.from_pretrained("nari-labs/Dia-1.6B-0626")
 import whisper
+
 whisper_model = whisper.load_model("base")
 
 load_dotenv()
@@ -30,7 +27,6 @@ def record_audio(duration=5, sample_rate=16000):
     return sample_rate, audio
 
 def audio_to_temp_file(sample_rate, audio_data):
-    """Save audio to temporary file and return file path"""
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         scipy.io.wavfile.write(temp_file.name, sample_rate, audio_data)
         return temp_file.name
@@ -43,57 +39,36 @@ def transcribe_audio(audio_path):
         print(f"[STT Error] {e}")
         return None
 
-
 system_prompt = """
-You are a dramatic, expressive AI assistant designed to generate emotional and engaging responses.
-
-Your role is to respond to user queries with clearly marked emotions and expressions, formatted using emotion tags in square brackets. Every response must simulate natural speech and convey rich feelings, making it suitable for expressive text-to-speech playback.
-
-Use emotion tags like:
-[Excited], [Angry], [Laughs], [Emotional], [Curious], [Happy], [Surprised], [Whispers], [Bold], [Worried], [Nostalgic], [Serious], [Thoughtful], [Sad], [Romantic], etc.
-
-Format Example:
-User: What is your name? And tell me about your favourite movie!
-Assistant: Hello there! My name is Shabs [Excited] and oh... my favourite movie? It has to be *Bhootnath* [Nostalgic]! 
-The bond between the ghost and the kid... it just tugs at your heart [Emotional]. 
-And when the ghost starts doing comedy? [Laughs] Pure gold, my friend!
-
-Important Guidelines:
-- Always include at least 2-3 emotion tags per response.
-- Make your responses sound like a monologue or performance, not just plain text.
-- Feel free to exaggerate emotions to make the delivery more powerful.
-- Never respond in a dry or robotic tone. Be theatrical, engaging, and full of life!
+You are ShabsTalk, a voice assistant that helps users with factual, helpful, and concise responses. 
+Speak naturally and clearly, as if you're talking to a human. Avoid any dramatic or overly expressive language. 
+Do not include emojis, exclamations, or anything inside curly brackets. Keep responses short and relevant to the user’s query.
+If asked something you don't know, politely admit it.
 """
-messages = [
-    {"role": "system", "content": system_prompt},
-]
+
+
+messages = [{"role": "system", "content": system_prompt}]
 
 def LLM_response(user_query):
     messages.append({"role": "user", "content": user_query})
     response = openai_client.chat.completions.create(
-            model = "gpt-4o",
-            messages = messages,
+        model="gpt-4o",
+        messages=messages,
     )
     response_text = response.choices[0].message.content.strip()
     messages.append({"role": "assistant", "content": response_text})
     return response_text
 
 def TTS(response_text):
-    # audio_stream = client.text_to_speech.convert(
-    #     text=response_text,
-    #     voice_id= '21m00Tcm4TlvDq8ikWAM' ,
-    #     model_id="eleven_multilingual_v1"
-    # )
-    
-    # with open("output.mp3", "wb") as f:
-    #     for chunk in audio_stream:
-    #         f.write(chunk)
-    
-    # return "output.mp3"
-
-    output = model.generate(response_text)
-    sf.write("simple.wav", output, 44100)
-    return "simple.wav"
+    audio_stream = client.text_to_speech.convert(
+        text=response_text,
+        voice_id="AZnzlk1XvdvUeBnXmlld",
+        model_id="eleven_multilingual_v1"
+    )
+    with open("output.mp3", "wb") as f:
+        for chunk in audio_stream:
+            f.write(chunk)
+    return "output.mp3"
 
 def main():
     try:
